@@ -1,28 +1,34 @@
 import json
+
 import numpy as np
 import pandas as pd
+
 from processing.reader import File
 
 
 class DataObject: # --> do wydzielenia danych treningowych i walidacyjnych
-    def __init__(self, file : File):
+    def __init__(self, file: File):
         self.data = file.data
 
     def refactor_columns_with_file(self, config_file):
         rename_dict = json.load(open(config_file, 'r', encoding='utf-8'))
         self.data = self.data.loc[:, list(rename_dict.keys())].rename(columns=rename_dict)
 
-    def print(self, columns='all', wide_view=False, nrow=20, ncol=50):
+    def print(self, columns='all', rows='all', wide_view=False, nrow=20, ncol=50):
         display_columns = list(self.data.columns)
-        if isinstance(columns, list):
+        display_rows = list(range(self.data.shape[0]))
+        if isinstance(columns, list) and isinstance(rows, list):
             display_columns = columns
+            display_rows = rows
         elif columns != 'all':
             raise ValueError('Błędny wartość parametru columns. Musi być to lista lub "all".')
+        elif rows != 'all':
+            raise ValueError('Błędny wartość parametru rows. Musi być to lista lub "all".')
         if wide_view:
             with pd.option_context('display.min_rows', nrow, 'display.max_columns', ncol, 'display.width', 1000):
-                print(self.data.loc[:, display_columns])
+                print(self.data.loc[display_rows, display_columns])
         else:
-            print(self.data.loc[:, display_columns])
+            print(self.data.loc[display_rows, display_columns])
 
     def summary(self):
         print(self.data.info())
@@ -61,6 +67,10 @@ class MetallurgyDataObject(DataObject):
         per_ferr = per_ferr.apply(lambda x: normalize(x[0], x[1]), axis=1, result_type='expand').rename(columns={0: 'perlite_perc', 1: 'ferrite_perc'})
 
         self.data.loc[:, ['perlite_perc', 'ferrite_perc']] = per_ferr
+
+    # Uzupełnienie temperatury - ustalone 21 stopni
+    def complement_temperature(self):
+        self.data['impact_strength_temp'] = self.data['impact_strength_temp'].fillna(21)
 
     # Na zewnętrznych danych (plus dane od Kochańskiego) wyuczyć model i wgrać go, aby dokonał prognozy na tym zbiorze danych.
     def fill_durability(self):
