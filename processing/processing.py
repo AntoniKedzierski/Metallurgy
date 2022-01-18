@@ -17,13 +17,14 @@ class DataObject: # --> do wydzielenia danych treningowych i walidacyjnych
     def print(self, columns='all', rows='all', wide_view=False, nrow=20, ncol=50):
         display_columns = list(self.data.columns)
         display_rows = list(range(self.data.shape[0]))
-        if isinstance(columns, list) and isinstance(rows, list):
+        if isinstance(columns, list):
             display_columns = columns
-            display_rows = rows
+            if isinstance(rows, list):
+                display_rows = rows
+            elif rows != 'all':
+                raise ValueError('Błędny wartość parametru rows. Musi być to lista lub "all".')
         elif columns != 'all':
             raise ValueError('Błędny wartość parametru columns. Musi być to lista lub "all".')
-        elif rows != 'all':
-            raise ValueError('Błędny wartość parametru rows. Musi być to lista lub "all".')
         if wide_view:
             with pd.option_context('display.min_rows', nrow, 'display.max_columns', ncol, 'display.width', 1000):
                 print(self.data.loc[display_rows, display_columns])
@@ -41,17 +42,24 @@ class MetallurgyDataObject(DataObject):
     # =============================================================
     # Proste wywalanie/uzupełnianie nulli
     # =============================================================
-    def handle_nulls(self, columns, method='drop'):
+    def handle_nulls(self, columns, method='drop', value=0):
         if method == 'drop':
             self.data = self.data.dropna(subset=columns).reset_index(drop=True)
         elif method == 'fill_zeros':
             self.data.loc[:, columns] = self.data.loc[:, columns].fillna(0)
+        elif method == 'correct':
+            self.data.loc[:, columns] = self.data.loc[:, columns].fillna(value)
         else:
             raise ValueError('Nieznane metoda wypełniania została podana jako parametr do procedury.')
 
     # =============================================================
     # Dedykowane pod konkretne kolumny procedury uzupełniające dane
     # =============================================================
+
+    def complement_sulfur_phosphorus(self):
+        self.data.loc[self.data['sulfur'] == 0, 'sulfur'] = 0.003
+        self.data.loc[self.data['phosphorus'] == 0, 'phosphorus'] = 0.003
+
     def complement_perlite_ferrite(self):
         def normalize(x, y):
             if x == 0 and y == 0:
@@ -68,7 +76,38 @@ class MetallurgyDataObject(DataObject):
 
         self.data.loc[:, ['perlite_perc', 'ferrite_perc']] = per_ferr
 
-    # Uzupełnienie temperatury - ustalone 21 stopni
+    # Szukanie outlierow
+    def removing_outliers(self, column, method='drop', scale=1):
+        outliers = []
+        print(len(list([column])))
+        if len(list([column])) != 1:
+            raise ValueError('Podaj tylko jedną kolumnę.')
+        else:
+            data_1 = self.data.loc[:, column]
+            threshold = 3
+            mean_1 = np.mean(data_1)
+            std_1 = np.std(data_1)
+            for y in data_1:
+                z_score = (y - mean_1) / std_1
+                if np.abs(z_score) > threshold:
+                    outliers.append(y)
+            print('Outliery dla', column, ': \n', outliers)
+
+            if method == 'drop':
+                self.data = self.data[~self.data.loc[:, column].isin(outliers)].reset_index(drop=True)
+            elif method == 'correct':
+                self.data[self.data.loc[:, column].isin(outliers)] = self.data[self.data.loc[:, column].isin(outliers)]*scale
+            else:
+                print('Nieznane metoda wypełniania została podana jako parametr do procedury. Tylko wypisanie outlierów.')
+
+            return outliers
+
+    def discretization(self, column, by):
+        self.data.loc[self.data.loc[:, column] > by, column] = 'high'
+        self.data.loc[self.data.loc[:, column] != 'high', column] = 'low'
+        self.data.loc[:, column].astype('category')
+
+        # Uzupełnienie temperatury - ustalone 21 stopni
     def complement_temperature(self):
         self.data['impact_strength_temp'] = self.data['impact_strength_temp'].fillna(21)
 
