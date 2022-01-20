@@ -112,12 +112,33 @@ class MetallurgyDataObject(DataObject):
         self.data['impact_strength_temp'] = self.data['impact_strength_temp'].fillna(21)
 
     # Na zewnętrznych danych (plus dane od Kochańskiego) wyuczyć model i wgrać go, aby dokonał prognozy na tym zbiorze danych.
-    def fill_durability(self):
-        pass
+    def fill_tensile(self, method='tpot'):
+        import pickle
+        if method=='tpot':
+            loaded_model = pickle.load(open('models/imputation/wytrzym_ascast.sav', 'rb')) # wczytany zapisany model
+            slicer = self.data.loc[:, ['tensile_liquid_state']]['tensile_liquid_state'].isnull() == True  # gdzie wpychamy
+            variables = ['carbon', 'manganese', 'silicon', 'phosphorus', 'sulfur', 'chromium', 'nickel', 'copper',
+                         'magnesium']
+            results = loaded_model.predict(self.data.loc[slicer, variables])
+            self.data.loc[slicer, ['tensile_liquid_state']] =results
+        #if method=='neural_net':
+        #pass
 
-    def fill_tensile(self):
-        pass
-
+    def fill_durability(self, method='tpot'):
+            import pickle
+            if method == 'tpot':
+                loaded_model = pickle.load(open('models/imputation/wydluz_ascast.sav', 'rb'))  # wczytany zapisany model
+                slicer = self.data.loc[:, ['durability_liquid_state']][
+                             'durability_liquid_state'].isnull() == True  # gdzie wpychamy
+                variables = ['carbon', 'manganese', 'silicon', 'phosphorus', 'sulfur', 'chromium', 'nickel', 'copper',
+                             'magnesium']
+                results = loaded_model.predict(self.data.loc[slicer, variables])
+                self.data.loc[slicer, ['durability_liquid_state']] = results
+        #pass
+    def get_Rm_model(self):
+        self.data = self.data.loc [pd.DataFrame(self.data.loc[:,['Rm']]['Rm'].isnull()==False).index,:]
+    def get_impact_strength_model(self):
+        self.data = self.data.loc [pd.DataFrame(self.data.loc[:,['impact_strength']]['impact_strength'].isnull()==False).index,:]
     # =============================================================
     # Dane ekstrachowane do innych modeli (np. w R)
     # =============================================================

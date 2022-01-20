@@ -70,24 +70,13 @@ from sklearn.preprocessing import Normalizer, PolynomialFeatures
 from tpot.builtins import StackingEstimator
 from tpot.export_utils import set_param_recursive
 
-# NOTE: Make sure that the outcome column is labeled 'target' in the data file
-tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR', dtype=np.float64)
-features = tpot_data.drop('target', axis=1)
-training_features, testing_features, training_target, testing_target = \
-            train_test_split(features, tpot_data['target'], random_state=0)
-
 # Average CV score on the training set was: -1101.1522789010987
-exported_pipeline = make_pipeline(
+wytrzym_pipeline = make_pipeline(
     StackingEstimator(estimator=SGDRegressor(alpha=0.01, eta0=0.1, fit_intercept=False, l1_ratio=1.0, learning_rate="constant", loss="epsilon_insensitive", penalty="elasticnet", power_t=10.0)),
     Normalizer(norm="max"),
     PolynomialFeatures(degree=2, include_bias=False, interaction_only=False),
     ExtraTreesRegressor(bootstrap=False, max_features=0.5, min_samples_leaf=1, min_samples_split=2, n_estimators=100)
 )
-# Fix random state for all the steps in exported pipeline
-set_param_recursive(exported_pipeline.steps, 'random_state', 0)
-
-exported_pipeline.fit(training_features, training_target)
-results = exported_pipeline.predict(testing_features)
 # Full data model tpot for wydluz
 import numpy as np
 import pandas as pd
@@ -99,24 +88,33 @@ from sklearn.svm import LinearSVR
 from tpot.builtins import StackingEstimator
 from tpot.export_utils import set_param_recursive
 
-# NOTE: Make sure that the outcome column is labeled 'target' in the data file
-tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR', dtype=np.float64)
-features = tpot_data.drop('target', axis=1)
-training_features, testing_features, training_target, testing_target = \
-            train_test_split(features, tpot_data['target'], random_state=0)
-
 # Average CV score on the training set was: -4.896314428021981
-exported_pipeline = make_pipeline(
+wydluz_pipeline = make_pipeline(
     Normalizer(norm="l1"),
     StackingEstimator(estimator=LinearSVR(C=20.0, dual=True, epsilon=0.1, loss="epsilon_insensitive", tol=0.01)),
     Normalizer(norm="max"),
     ExtraTreesRegressor(bootstrap=False, max_features=0.7000000000000001, min_samples_leaf=1, min_samples_split=2, n_estimators=100)
 )
-# Fix random state for all the steps in exported pipeline
-set_param_recursive(exported_pipeline.steps, 'random_state', 0)
+# Learning models:
+DF=pd.read_excel("C:\\Users\\huber\\Dropbox\\PW\\3 SEMESTR\\ODLEWNICTWO\\dane_zeliwo_full.xlsx")
+DF=DF.drop(['Lp', '[LABELS]'], axis=1)
+X_train=DF.iloc[:,0:9]
+wytrzym_pipeline.fit(DF.iloc[:,0:9],DF.wytrzym)
+wydluz_pipeline.fit(DF.iloc[:,0:9], DF.wydluz)
 
-exported_pipeline.fit(training_features, training_target)
-results = exported_pipeline.predict(testing_features)
+
+import pickle
+pickle.dump(wydluz_pipeline, open('models/imputation/wytrzym_ascast.sav', 'wb'))
+loaded_model = pickle.load(open('models/imputation/wytrzym_ascast.sav', 'rb'))
+
+pickle.dump(wytrzym_pipeline, open('models/imputation/wydluz_ascast.sav', 'wb'))
+loaded_model = pickle.load(open('models/imputation/wydluz_ascast.sav', 'rb'))
+
+loaded_model.predict(DF.iloc[:,0:9])
+
+
+
+
 # Data model without wegiel tpot for wytrzym
 
 # Data model without wegiel tpot for wydluz
@@ -136,12 +134,8 @@ results = exported_pipeline.predict(testing_features)
 
 
 
-
-
-
-
-
-
-
 # import tpot
 # from tpot import TPOTRegressor
+loaded_model = pickle.load(open('wytrzym_ascast.sav', 'rb'))  # wczytany zapisany model
+DF=pd.read_excel("C:\\Users\\huber\\Dropbox\\PW\\3 SEMESTR\\ODLEWNICTWO\\dane_0.xlsx")
+
