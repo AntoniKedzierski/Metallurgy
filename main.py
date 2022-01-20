@@ -2,8 +2,6 @@ import matplotlib
 import matplotlib.pyplot as plt
 import pandas as pd
 import sklearn
-import statsmodels
-import tpot
 
 from processing.reader import ExcelFile
 from processing.processing import MetallurgyDataObject
@@ -25,13 +23,15 @@ if __name__ == '__main__':
 
     # 'magnesium'
     d.removing_outliers('magnesium', method='correct', scale=0.1)
-    d.handle_nulls(columns=['magnesium'], method='correct', value=0.03)
+    d.handle_nulls(columns=['magnesium', 'manganese'], method='correct', value=0.03)
 
     # 'manganese' - bimodalny rozkład
-    d.discretization(column='manganese', by=0.25) # NA będą low
-    d.print(wide_view=True, nrow=400, columns=['manganese'], rows=list(range(1160, 1190))) #test metody
+    # d.discretization(column='manganese', by=0.25) # NA będą low
+    # d.print(wide_view=True, nrow=400, columns=['manganese'], rows=list(range(1160, 1190))) #test metody
 
     d.handle_nulls(columns=['nickel', 'copper', 'molybdenum', 'chromium', 'aluminium', 'tin'], method='fill_zeros')
+    d.handle_nulls(columns=['austenitization_temp', 'austenitization_duration', 'hardening_temp', 'hardening_duration'], method='drop')
+    d.drop_columns(columns=['graphite_precipitation', 'graphite_precipitation_perc', 'spheroid_diameter', 'spheroid_size', 'nodularity'])
 
     # NA to do:
     # 'austenitization_temp', 'austenitization_duration', 'hardening_temp', 'hardening_duration'
@@ -39,23 +39,9 @@ if __name__ == '__main__':
     d.complement_perlite_ferrite()
     d.complement_temperature()
 
-    d.get_Rm_model()
-
-    # ...
-    #d.print(wide_view=True, nrow=400)
-    #d.print(columns=['source_id', 'magnesium'], rows=list(range(1129, 1290)))
-    #d.summary()
-    #d.print(wide_view=True, nrow=400)
-    #d.print(wide_view=True, nrow=400, columns=['impact_strength_temp'], rows=list(range(1160, 1190)))
-    # Węgiel
-    #dane = f.data
-    #carbon = pd.DataFrame(dane['C [%]'])
-    #print(carbon)
-
-
-    #carbon.isna().sum()/carbon.count()*100 # Braki danych 4.6495% - mało
-    #plt.boxplot(dane['C [%]'].dropna())
-    #plt.show() # Wygląda spoko
+    d.fill_durability()
+    d.fill_tensile()
+    d.export()
 
 
 
