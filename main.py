@@ -1,6 +1,9 @@
 import matplotlib
 import matplotlib.pyplot as plt
 import pandas as pd
+import sklearn
+import statsmodels
+import tpot
 
 from processing.reader import ExcelFile
 from processing.processing import MetallurgyDataObject
@@ -36,6 +39,7 @@ if __name__ == '__main__':
     d.complement_perlite_ferrite()
     d.complement_temperature()
 
+    d.get_Rm_model()
 
     # ...
     #d.print(wide_view=True, nrow=400)
