@@ -189,6 +189,9 @@ class MetallurgyDataObject(DataObject):
         export = self.data[X + Y].drop_duplicates(subset=X).dropna(subset=['graphite_precipitation'])
         export.to_csv('data/processed/graphite_model.csv', index=False)
 
+    def export(self):
+        self.data.to_csv('data/processed/metalurgy.csv')
+
     # TODO: Dopisać więcej metod...
     #   1) Przerobić zmienne odpowiedzi.
     #   2) Wydzielić dane (nie puste wiersze) do modelu prognozującego wytrzymałość w stanie lanym (durability_liquid_state) i odporność na rozciąganie (tensile_liquid_state).
