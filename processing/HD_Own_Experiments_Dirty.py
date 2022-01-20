@@ -39,15 +39,12 @@ import pandas as pd
 import tpot as tpot
 from statsmodels.stats.outliers_influence import variance_inflation_factor
 
-
 # Data for AS CAST
 DF=pd.read_excel("C:\\Users\\huber\\Dropbox\\PW\\3 SEMESTR\\ODLEWNICTWO\\dane_zeliwo_full.xlsx")
 DF=DF.drop(['Lp', '[LABELS]', 'tward'], axis=1)
 DF.head()
 DF.iloc[:,0:6].describe()
 DF.iloc[:,6:11].describe()
-
-
 
 # calculating VIF for each feature
 vif_data = pd.DataFrame()
@@ -102,7 +99,6 @@ X_train=DF.iloc[:,0:9]
 wytrzym_pipeline.fit(DF.iloc[:,0:9],DF.wytrzym)
 wydluz_pipeline.fit(DF.iloc[:,0:9], DF.wydluz)
 
-
 import pickle
 pickle.dump(wydluz_pipeline, open('models/imputation/wytrzym_ascast.sav', 'wb'))
 loaded_model = pickle.load(open('models/imputation/wytrzym_ascast.sav', 'rb'))
@@ -112,8 +108,13 @@ loaded_model = pickle.load(open('models/imputation/wydluz_ascast.sav', 'rb'))
 
 loaded_model.predict(DF.iloc[:,0:9])
 
+############################
 
 
+vif_data = pd.DataFrame()
+vif_data["feature"] = X.columns
+vif_data["VIF"] = [variance_inflation_factor(X.values, i)
+                          for i in range(len(X.columns))]
 
 # Data model without wegiel tpot for wytrzym
 

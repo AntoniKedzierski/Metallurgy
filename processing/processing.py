@@ -1,8 +1,10 @@
 import json
-
 import numpy as np
 import pandas as pd
-
+import subprocess
+import sys
+def install(package):
+    subprocess.check_call([sys.executable, "-m", "pip", "install", package])
 from processing.reader import File
 
 
@@ -136,9 +138,48 @@ class MetallurgyDataObject(DataObject):
                 self.data.loc[slicer, ['durability_liquid_state']] = results
         #pass
     def get_Rm_model(self):
-        self.data = self.data.loc [pd.DataFrame(self.data.loc[:,['Rm']]['Rm'].isnull()==False).index,:]
+        self.data = self.data.loc[pd.DataFrame(self.data.loc[:,['Rm']]['Rm'].isnull()==False).index,:]
     def get_impact_strength_model(self):
         self.data = self.data.loc [pd.DataFrame(self.data.loc[:,['impact_strength']]['impact_strength'].isnull()==False).index,:]
+
+    def impute_with_MissForrest(self):
+        import subprocess
+        import sys
+        def install(package):
+            subprocess.check_call([sys.executable, "-m", "pip", "install", package])
+        install('missingpy')
+        from missingpy import MissForest
+        imputer = MissForest()
+        self.data = imputer.fit_transform(self.data)
+    def impute_with_GAIN(self, params):
+            '''Impute missing values in data_x
+            def gain(data_x, gain_parameters):
+            Args:
+              - data_x: original data with missing values
+              - gain_parameters: GAIN network parameters:
+                - batch_size: Batch size
+                - hint_rate: Hint rate
+                - alpha: Hyperparameter
+                - iterations: Iterations
+            Returns:
+              - imputed_data: imputed data
+            '''
+        #import models imputation.gain
+        #gain({"batch_size":500, #"hint_rate" :  0.5,  "alpha" :  100, "iterations" : 100000 })
+    #pass
+    def drop_columns(self, columns):
+        self.data = self.data.drop(columns=columns)
+
+    def check_VIF(self, features):
+        install('statsmodels')
+        from statsmodels.stats.outliers_influence import variance_inflation_factor
+        vif_data = pd.DataFrame()
+        vif_data["feature"] = self.data.loc[:,features].columns
+        vif_data["VIF"] = [variance_inflation_factor(self.data.values, i)
+                           for i in range(len(self.data.columns))]
+        print(vif_data)
+
+
     # =============================================================
     # Dane ekstrachowane do innych modeli (np. w R)
     # =============================================================
